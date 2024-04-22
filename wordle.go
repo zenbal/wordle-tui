@@ -1,6 +1,10 @@
 package main
 
-// import "fmt"
+import (
+	"encoding/csv"
+	// "fmt"
+	"os"
+)
 
 func alphabet_idx(char byte) int {
 	return int(char - 'a')
@@ -21,19 +25,19 @@ func NewNode(value byte) *Node {
 }
 
 func (n *Node) siblings() []*Node {
-    node_idx := alphabet_idx(n.value)
-    siblings := append(n.parent.children[:node_idx], n.parent.children[node_idx + 1:]...)
-    return siblings
+	node_idx := alphabet_idx(n.value)
+	siblings := append(n.parent.children[:node_idx], n.parent.children[node_idx+1:]...)
+	return siblings
 }
 
 func (n *Node) anySiblings() bool {
-    siblings := n.siblings()
-    for _, sibling := range siblings {
-        if sibling != nil {
-            return true
-        }
-    }
-    return false
+	siblings := n.siblings()
+	for _, sibling := range siblings {
+		if sibling != nil {
+			return true
+		}
+	}
+	return false
 }
 
 type Trie struct {
@@ -55,10 +59,12 @@ func (t *Trie) insertWord(word string) {
 		var new_node *Node = nil
 		if next := curr.children[char_idx]; next == nil {
 			new_node = NewNode(word[i])
-            new_node.parent = curr 
+			new_node.parent = curr
 			curr.children[char_idx] = new_node
+			curr = new_node
+		} else {
+			curr = next
 		}
-		curr = new_node
 	}
 	curr.isWord = true
 }
@@ -75,13 +81,32 @@ func (t *Trie) deleteWord(word string) {
 		}
 	}
 	curr_idx := alphabet_idx(curr.value)
-    for i := 0; i < len(word); i++ {
-       if curr.anySiblings() {
-           curr.parent.children[curr_idx] = nil
-           return
-       } 
-       curr = curr.parent
-       curr_idx = alphabet_idx(curr.value)
-    }
+	for i := 0; i < len(word); i++ {
+		if curr.anySiblings() {
+			curr.parent.children[curr_idx] = nil
+			return
+		}
+		curr = curr.parent
+		curr_idx = alphabet_idx(curr.value)
+	}
 }
 
+func (t *Trie) insertWordleData() error {
+	file, err := os.Open("./data/valid_wordle_solutions.csv")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+
+	words, err := reader.ReadAll()
+	if err != nil {
+		return err
+	}
+
+	for _, word := range words {
+		t.insertWord(word[0])
+	}
+	return nil
+}
