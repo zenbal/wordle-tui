@@ -1,112 +1,169 @@
 package main
 
 import (
-	"encoding/csv"
-	// "fmt"
+	"bufio"
+	"fmt"
 	"os"
+	"sort"
 )
 
-func alphabet_idx(char byte) int {
-	return int(char - 'a')
+var ALPHABET = []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
+
+func inAlphabet(char byte) bool {
+	index := sort.Search(len(ALPHABET), func(i int) bool {
+		return ALPHABET[i] >= char
+	})
+	return index < len(ALPHABET) && ALPHABET[index] == char
 }
 
-type Node struct {
+type Wordle struct {
+	board    []Guess
+	attempt  int
+	solution string
+	status   GameStatus
+	trie     Trie
+}
+
+type GameStatus int
+
+const (
+	ONGOING GameStatus = iota
+	WIN
+	LOOSE
+)
+
+type Feedback int
+
+const (
+	TBD Feedback = iota
+	GREY
+	YELLOW
+	GREEN
+)
+
+type Guess []*GuessChar
+
+type GuessChar struct {
 	value    byte
-	children []*Node
-	parent   *Node
-	isWord   bool
+	feedback Feedback
 }
 
-func NewNode(value byte) *Node {
-	return &Node{
-		value:    value,
-		children: make([]*Node, 26),
+func NewGuess(word string) (Guess, error) {
+	guess := make([]*GuessChar, 5)
+	if len(word) != 5 {
+		return guess, fmt.Errorf("Error: Guess has to be 5 characters long")
 	}
+	for i, char := range word {
+		if inAlphabet(byte(char)) == false {
+			return guess, fmt.Errorf("Error: Invalid character")
+		}
+		guess[i] = &GuessChar{value: byte(char), feedback: TBD}
+	}
+	return guess, nil
 }
 
-func (n *Node) siblings() []*Node {
-	node_idx := alphabet_idx(n.value)
-	siblings := append(n.parent.children[:node_idx], n.parent.children[node_idx+1:]...)
-	return siblings
+func NewWordle(solution string) *Wordle {
+	if len(solution) != 5 {
+		return nil
+	}
+	board := make([]Guess, 6)
+
+	trie := NewTrie()
+	if err := trie.insertWordleData(); err != nil {
+		return nil
+	}
+
+	wordle := &Wordle{
+		board:    board,
+		attempt:  0,
+		solution: solution,
+		trie:     trie,
+	}
+	return wordle
 }
 
-func (n *Node) anySiblings() bool {
-	siblings := n.siblings()
-	for _, sibling := range siblings {
-		if sibling != nil {
+func (w *Wordle) guess(word string) error {
+	new_guess, err := NewGuess(word)
+	if err != nil {
+		return err
+	}
+    if valid := w.trie.findWord(word); valid == false {
+        return fmt.Errorf("Error: Invalid word")
+    }
+	w.board[w.attempt] = new_guess
+	num_correct := 0
+	for i, char := range w.board[w.attempt] {
+		if char.value == w.solution[i] {
+			char.feedback = GREEN
+			num_correct++
+		} else if w.solutionContains(char.value) {
+			char.feedback = YELLOW
+		} else {
+			char.feedback = GREY
+		}
+	}
+
+	if num_correct == 5 {
+		w.status = WIN
+	} else if w.attempt == 5 {
+		w.status = LOOSE
+	} else {
+		w.status = ONGOING
+	}
+	w.attempt++
+	return nil
+}
+
+func (w *Wordle) solutionContains(char byte) bool {
+	for _, c := range w.solution {
+		if byte(c) == char {
 			return true
 		}
 	}
 	return false
 }
 
-type Trie struct {
-	head *Node
-}
-
-func NewTrie() Trie {
-	head := NewNode(' ')
-	return Trie{
-		head: head,
-	}
-}
-
-func (t *Trie) insertWord(word string) {
-	curr := t.head
-	for i := 0; i < len(word); i++ {
-		char := word[i]
-		char_idx := alphabet_idx(char)
-		var new_node *Node = nil
-		if next := curr.children[char_idx]; next == nil {
-			new_node = NewNode(word[i])
-			new_node.parent = curr
-			curr.children[char_idx] = new_node
-			curr = new_node
+// INFO: temporary
+func (w *Wordle) play() {
+	if w.status != ONGOING {
+		fmt.Print(w.toString())
+		if w.status == WIN {
+			fmt.Println("You win!")
 		} else {
-			curr = next
+			fmt.Println("You loose!")
 		}
+		return
 	}
-	curr.isWord = true
+    reader := bufio.NewReader(os.Stdin)
+    for true {
+        fmt.Print(w.toString())
+        fmt.Print("Enter guess: ")
+        text, _ := reader.ReadString('\n')
+        text = text[:len(text)-1]
+        if err := w.guess(text); err != nil {
+            fmt.Println(err)
+            continue
+        }
+        break
+    }
+	w.play()
 }
 
-func (t *Trie) deleteWord(word string) {
-	curr := t.head
-	for i := 0; i < len(word); i++ {
-		char := word[i]
-		char_idx := alphabet_idx(char)
-		if next := curr.children[char_idx]; next != nil {
-			curr = next
-		} else {
-			return
+func (w *Wordle) toString() string {
+	s := "Board:\n"
+	for row := range w.board {
+		if w.board[row] == nil {
+			continue
 		}
-	}
-	curr_idx := alphabet_idx(curr.value)
-	for i := 0; i < len(word); i++ {
-		if curr.anySiblings() {
-			curr.parent.children[curr_idx] = nil
-			return
+		for col := range w.board[row] {
+			s += fmt.Sprintf("  %s(%d)  ", string(w.board[row][col].value), w.board[row][col].feedback)
 		}
-		curr = curr.parent
-		curr_idx = alphabet_idx(curr.value)
+		s += "\n"
 	}
+	return s
 }
 
-func (t *Trie) insertWordleData() error {
-	file, err := os.Open("./data/valid_wordle_solutions.csv")
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	reader := csv.NewReader(file)
-
-	words, err := reader.ReadAll()
-	if err != nil {
-		return err
-	}
-
-	for _, word := range words {
-		t.insertWord(word[0])
-	}
-	return nil
+func main() {
+	wordle := NewWordle("earth")
+	wordle.play()
 }
