@@ -110,9 +110,25 @@ func (m model) AlphabetView() string {
 		view[i] = make([]string, 10)
 	}
 	for row := range alphabet {
-		for col := range alphabet[row] {
+        outer: for col := range alphabet[row] {
 			char := alphabet[row][col]
-			view[row][col] = defaultInputStyle.Padding(1, 1).Render(strings.ToUpper(string(char)))
+            for _, char_idx := range m.wordle.assign {
+                if char_idx == alphabet_idx(byte(char)) {
+                    view[row][col] = greenInputStyle.Padding(1, 1).Render(strings.ToUpper(string(char)))
+                    continue outer
+                }
+            }
+            for char_idx, include := range m.wordle.include {
+                if char_idx == alphabet_idx(byte(char)) && include {
+                    view[row][col] = yellowInputStyle.Padding(1, 1).Render(strings.ToUpper(string(char)))
+                    continue outer
+                }
+                if char_idx == alphabet_idx(byte(char)) && !include {
+                    view[row][col] = greyInputStyle.Padding(1, 1).Render(strings.ToUpper(string(char)))
+                    continue outer
+                }
+            }
+            view[row][col] = defaultInputStyle.Padding(1, 1).Render(strings.ToUpper(string(char)))
 		}
 	}
 	view_joined_rows := make([]string, 3)
