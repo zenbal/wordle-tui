@@ -98,7 +98,6 @@ func (m model) AsideView() string {
 	return m.AlphabetView()
 }
 
-// TODO: rewrite this and render the feedback
 func (m model) AlphabetView() string {
 	alphabet := [][]rune{
 		{'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'},
