@@ -131,41 +131,81 @@ func (w *Wordle) guess(word string) error {
 }
 
 func (w *Wordle) validate(guess Guess) bool {
-    found_included := make(map[int]bool)
 	for i, char := range guess {
-        char_idx := alphabet_idx(char.value)
+		char_idx := alphabet_idx(char.value)
 
-        if assigned, ok := w.assign[i]; ok {
-            if assigned != char_idx {
-                fmt.Printf("Tip: '%s' is at index %d of the solution\n", string(ALPHABET[assigned]), i)
-                return false
-            }
-        }
+		if assigned, ok := w.assign[i]; ok {
+			if assigned != char_idx {
+				// fmt.Printf("Tip: '%s' is at index %d of the solution\n", string(ALPHABET[assigned]), i)
+				return false
+			}
+		}
 
-        if included, ok := w.include[char_idx]; ok {
-            if !included {
-                fmt.Printf("Tip: '%s' is not part of the solution\n", string(char.value))
-                return false
-            } 
-            found_included[char_idx] = true
-        }
-        
-        if veto, ok := w.veto[i]; ok {
-            if _, isVetoed := veto[char_idx]; isVetoed {
-                fmt.Printf("Tip: '%s' can't be at index %d of the solution\n", string(char.value), i)
-                return false
-            }
-        }
+		if included, ok := w.include[char_idx]; ok {
+			if !included {
+				// fmt.Printf("Tip: '%s' is not part of the solution\n", string(char.value))
+				return false
+			}
+		}
+
+		if veto, ok := w.veto[i]; ok {
+			if _, isVetoed := veto[char_idx]; isVetoed {
+				// fmt.Printf("Tip: '%s' can't be at index %d of the solution\n", string(char.value), i)
+				return false
+			}
+		}
 	}
-    
-    for char_idx, include := range w.include {
-        if include && !found_included[char_idx] {
-            fmt.Printf("Tip: '%s' is part of the solution\n", string(ALPHABET[char_idx]))
-            return false
-        }
-    }
 
 	return true
+}
+
+func (w *Wordle) validateFull(guess Guess) bool {
+	if !w.validate(guess) {
+		return false
+	}
+
+	found_included := make(map[int]bool)
+	for _, char := range guess {
+		char_idx := alphabet_idx(char.value)
+		if included, ok := w.include[char_idx]; ok && included {
+			found_included[char_idx] = true
+		}
+	}
+
+	for char_idx, include := range w.include {
+		if include && !found_included[char_idx] {
+			// fmt.Printf("Tip: '%s' is part of the solution\n", string(ALPHABET[char_idx]))
+			return false
+		}
+	}
+
+	return true
+}
+
+func (w *Wordle) findGuessBacktrack() Guess {
+	guess := make(Guess, 0)
+	return w.backtrack(guess, w.trie.head)
+}
+
+func (w *Wordle) backtrack(guess Guess, curr *Node) Guess {
+	if len(guess) == 5 && curr.isWord {
+		return guess
+	}
+
+	for _, child := range curr.children {
+		if child == nil {
+			continue
+		}
+		temp_guess := append(guess, &GuessChar{value: child.value, feedback: TBD})
+		if w.validate(temp_guess) {
+			result := w.backtrack(temp_guess, child)
+			if result != nil && w.validateFull(result) {
+				return result
+			}
+		}
+	}
+
+	return nil
 }
 
 func (w *Wordle) solutionContains(char byte) bool {
@@ -194,7 +234,14 @@ func (w *Wordle) play() {
 		// fmt.Println("Assign:", w.assign)
 		// fmt.Println("Include:", w.include)
 		// fmt.Println("Veto:", w.veto)
-		fmt.Print("Enter guess: ")
+        guess := w.findGuessBacktrack()
+        guess_str := ""
+        for _, char := range guess {
+            guess_str += string(char.value)
+        }
+        fmt.Println("hint: ", guess_str)
+		fmt.Print("Your guess: ")
+
 		text, _ := reader.ReadString('\n')
 		text = text[:len(text)-1]
 		if err := w.guess(text); err != nil {

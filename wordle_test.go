@@ -68,3 +68,34 @@ func TestValidate(t *testing.T) {
         t.Errorf("Expected 'drown' to be an invalid guess following 'adept'")
     }
 }
+
+func TestFindGuessBacktrack(t *testing.T) {
+    wordle := NewTestWordle()
+    wordle.guess("adept")
+
+    guess := wordle.findGuessBacktrack()
+    guess_str := ""
+    for _, char := range guess {
+        guess_str += string(char.value)
+    }
+    if guess_str != "baste" {
+        t.Errorf("Expected suggested guess to be 'baste' but got '%s'", guess_str)
+    }
+
+    wordle.guess(guess_str)
+
+    guess = wordle.findGuessBacktrack()
+    guess_str = ""
+    for _, char := range guess {
+        guess_str += string(char.value)
+    }
+    if guess_str != "earth" {
+        t.Errorf("Expected suggested guess to be 'earth' but got '%s'", guess_str)
+    }
+    wordle.guess(guess_str)
+
+    if wordle.status != WIN {
+        t.Errorf("Expected status to be 'WIN'")
+    }
+}
+
