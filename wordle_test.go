@@ -5,7 +5,9 @@ import (
 )
 
 func NewTestWordle() *Wordle {
-    return NewWordle("earth")
+    wordle := NewWordle()
+    wordle.solution = "earth"
+    return wordle
 }
 
 func TestGuess(t *testing.T) {

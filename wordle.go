@@ -65,10 +65,7 @@ func NewGuess(word string) (Guess, error) {
 	return guess, nil
 }
 
-func NewWordle(solution string) *Wordle {
-	if len(solution) != 5 {
-		return nil
-	}
+func NewWordle() *Wordle {
 	board := make([]Guess, 6)
 
 	trie := NewTrie()
@@ -82,14 +79,15 @@ func NewWordle(solution string) *Wordle {
 	}
 
 	wordle := &Wordle{
-		board:    board,
-		attempt:  0,
-		solution: solution,
-		trie:     trie,
-		assign:   make(map[int]int),  // idx -> char_idx
-		include:  make(map[int]bool), // char_idx -> bool
-		veto:     veto,               // idx -> char_idx -> bool
+		board:   board,
+		attempt: 0,
+		trie:    trie,
+		assign:  make(map[int]int),  // idx -> char_idx
+		include: make(map[int]bool), // char_idx -> bool
+		veto:    veto,               // idx -> char_idx -> bool
 	}
+	wordle.solution = trie.randomWord()
+
 	return wordle
 }
 
@@ -183,6 +181,14 @@ func (w *Wordle) validateFull(guess Guess) bool {
 }
 
 func (w *Wordle) findGuessBacktrack() Guess {
+	if w.attempt == 0 {
+		random_guess, err := NewGuess(w.trie.randomWord())
+		if err != nil {
+			return nil
+		}
+		return random_guess
+	}
+
 	guess := make(Guess, 0)
 	return w.backtrack(guess, w.trie.head)
 }
@@ -234,12 +240,12 @@ func (w *Wordle) play() {
 		// fmt.Println("Assign:", w.assign)
 		// fmt.Println("Include:", w.include)
 		// fmt.Println("Veto:", w.veto)
-        guess := w.findGuessBacktrack()
-        guess_str := ""
-        for _, char := range guess {
-            guess_str += string(char.value)
-        }
-        fmt.Println("hint: ", guess_str)
+		guess := w.findGuessBacktrack()
+		guess_str := ""
+		for _, char := range guess {
+			guess_str += string(char.value)
+		}
+		fmt.Println("hint: ", guess_str)
 		fmt.Print("Your guess: ")
 
 		text, _ := reader.ReadString('\n')
@@ -253,6 +259,7 @@ func (w *Wordle) play() {
 	w.play()
 }
 
+// TODO: return a lipgloss styled string directly (get rid of most of BoardView)
 func (w *Wordle) toString() string {
 	s := "Board:\n"
 	for row := range w.board {
@@ -267,7 +274,7 @@ func (w *Wordle) toString() string {
 	return s
 }
 
-func main() {
-	wordle := NewWordle("earth")
-	wordle.play()
-}
+// func main() {
+// 	wordle := NewWordle()
+// 	wordle.play()
+// }

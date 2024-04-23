@@ -1,8 +1,9 @@
 package main
 
 import (
-    "os"
-    "encoding/csv"
+	"encoding/csv"
+	"math/rand"
+	"os"
 )
 
 func alphabet_idx(char byte) int {
@@ -37,6 +38,16 @@ func (n *Node) anySiblings() bool {
 		}
 	}
 	return false
+}
+
+func (n *Node) getChildren() []*Node {
+    result := make([]*Node, 0)
+    for _, child := range n.children {
+        if child != nil {
+            result = append(result, child)
+        }
+    } 
+    return result
 }
 
 type Trie struct {
@@ -118,4 +129,16 @@ func (t *Trie) insertWordleData() error {
 		t.insertWord(word[0])
 	}
 	return nil
+}
+
+func (t *Trie) randomWord() string {
+    curr := t.head
+    word := ""
+    for i := 0; i < 5; i++ {
+        children := curr.getChildren() 
+        next := children[rand.Intn(len(children))]
+        word += string(next.value)
+        curr = next
+    }
+    return word
 }
