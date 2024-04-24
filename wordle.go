@@ -248,17 +248,3 @@ func (w *Wordle) solutionContains(char byte) bool {
 	}
 	return false
 }
-
-func (w *Wordle) toString() string {
-	s := "Board:\n"
-	for row := range w.board {
-		if w.board[row] == nil {
-			continue
-		}
-		for col := range w.board[row] {
-			s += fmt.Sprintf("  %s(%d)  ", string(w.board[row][col].value), w.board[row][col].feedback)
-		}
-		s += "\n"
-	}
-	return s
-}
