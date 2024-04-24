@@ -124,7 +124,7 @@ func (m model) SuggestionView() string {
 	if m.suggestions {
 		s.WriteString(fmt.Sprintf("try '%s'\n", m.wordle.suggestNextGuess()))
 	}
-	return s.String()
+	return helpTextStyle.Render(s.String())
 }
 
 func (m model) HintView() string {
@@ -145,7 +145,7 @@ func (m model) HelpView() string {
 			)),
 			lipgloss.JoinVertical(
 				lipgloss.Right,
-				"Help", "Quit", "New", "Game", "Submit Guess", "Show Hints", "Show Suggestions",
+				"Help", "Quit", "New Game", "Submit Guess", "Show Hints", "Show Suggestions",
 			),
 		))
 	}
