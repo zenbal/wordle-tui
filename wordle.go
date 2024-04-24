@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"sort"
 )
 
@@ -25,6 +23,7 @@ type Wordle struct {
 	assign   map[int]int          // green
 	veto     map[int]map[int]bool // yellow
 	include  map[int]bool         // yellow & grey
+	message  string
 }
 
 type GameStatus int
@@ -97,6 +96,7 @@ func (w *Wordle) guess(word string) error {
 		return err
 	}
 	if valid := w.trie.findWord(word); valid == false {
+		w.message = fmt.Sprintf("'%s' is not a valid word\n", word)
 		return fmt.Errorf("Error: Invalid word")
 	}
 	w.board[w.attempt] = new_guess
@@ -134,26 +134,27 @@ func (w *Wordle) validate(guess Guess) bool {
 
 		if assigned, ok := w.assign[i]; ok {
 			if assigned != char_idx {
-				// fmt.Printf("Tip: '%s' is at index %d of the solution\n", string(ALPHABET[assigned]), i)
+				w.message = fmt.Sprintf("'%s' is at index %d of the solution\n", string(ALPHABET[assigned]), i)
 				return false
 			}
 		}
 
 		if included, ok := w.include[char_idx]; ok {
 			if !included {
-				// fmt.Printf("Tip: '%s' is not part of the solution\n", string(char.value))
+				w.message = fmt.Sprintf("'%s' is not part of the solution\n", string(char.value))
 				return false
 			}
 		}
 
 		if veto, ok := w.veto[i]; ok {
 			if _, isVetoed := veto[char_idx]; isVetoed {
-				// fmt.Printf("Tip: '%s' can't be at index %d of the solution\n", string(char.value), i)
+				w.message = fmt.Sprintf("'%s' can't be at index %d of the solution\n", string(char.value), i)
 				return false
 			}
 		}
 	}
 
+	w.message = ""
 	return true
 }
 
@@ -172,12 +173,22 @@ func (w *Wordle) validateFull(guess Guess) bool {
 
 	for char_idx, include := range w.include {
 		if include && !found_included[char_idx] {
-			// fmt.Printf("Tip: '%s' is part of the solution\n", string(ALPHABET[char_idx]))
+			w.message = fmt.Sprintf("'%s' is part of the solution\n", string(ALPHABET[char_idx]))
 			return false
 		}
 	}
 
+	w.message = ""
 	return true
+}
+
+func (w *Wordle) suggestNextGuess() string {
+	guess := w.findGuessBacktrack()
+	word := ""
+	for _, char := range guess {
+		word += string(char.value)
+	}
+	return word
 }
 
 func (w *Wordle) findGuessBacktrack() Guess {
@@ -223,43 +234,6 @@ func (w *Wordle) solutionContains(char byte) bool {
 	return false
 }
 
-// INFO: temporary
-func (w *Wordle) play() {
-	if w.status != ONGOING {
-		fmt.Print(w.toString())
-		if w.status == WIN {
-			fmt.Println("You win!")
-		} else {
-			fmt.Println("You loose!")
-		}
-		return
-	}
-	reader := bufio.NewReader(os.Stdin)
-	for true {
-		fmt.Print(w.toString())
-		// fmt.Println("Assign:", w.assign)
-		// fmt.Println("Include:", w.include)
-		// fmt.Println("Veto:", w.veto)
-		guess := w.findGuessBacktrack()
-		guess_str := ""
-		for _, char := range guess {
-			guess_str += string(char.value)
-		}
-		fmt.Println("hint: ", guess_str)
-		fmt.Print("Your guess: ")
-
-		text, _ := reader.ReadString('\n')
-		text = text[:len(text)-1]
-		if err := w.guess(text); err != nil {
-			fmt.Println(err)
-			continue
-		}
-		break
-	}
-	w.play()
-}
-
-// TODO: return a lipgloss styled string directly (get rid of most of BoardView)
 func (w *Wordle) toString() string {
 	s := "Board:\n"
 	for row := range w.board {
@@ -273,8 +247,3 @@ func (w *Wordle) toString() string {
 	}
 	return s
 }
-
-// func main() {
-// 	wordle := NewWordle()
-// 	wordle.play()
-// }
