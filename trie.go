@@ -31,7 +31,7 @@ func (n *Node) siblings() []*Node {
 	return siblings
 }
 
-func (n *Node) anySiblings() bool {
+func (n *Node) hasSiblings() bool {
 	siblings := n.siblings()
 	for _, sibling := range siblings {
 		if sibling != nil {
@@ -104,7 +104,7 @@ func (t *Trie) deleteWord(word string) {
 	}
 	curr_idx := alphabet_idx(curr.value)
 	for i := 0; i < len(word); i++ {
-		if curr.anySiblings() {
+		if curr.hasSiblings() {
 			curr.parent.children[curr_idx] = nil
 			return
 		}
