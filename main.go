@@ -302,6 +302,7 @@ func (m *model) handleKeyEnter() tea.Cmd {
 	}
 
 	if err := m.wordle.guess(strings.ToLower(word)); err != nil {
+        m.hint = m.wordle.message
 		return cmd
 	}
 	m.cursor = 0
