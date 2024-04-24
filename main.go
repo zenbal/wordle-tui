@@ -123,7 +123,7 @@ func (m model) AsideView() string {
 func (m model) SuggestionView() string {
 	var s strings.Builder
 	if m.suggestions {
-		s.WriteString(fmt.Sprintf("Try '%s'\n", m.wordle.suggestNextGuess()))
+		s.WriteString(fmt.Sprintf("Try: '%s'\n", m.wordle.suggestNextGuess()))
 	}
 	return helpTextStyle.Render(s.String())
 }
@@ -298,11 +298,11 @@ func (m *model) handleKeyEnter() tea.Cmd {
 	guess, err := NewGuess(word)
 	if err == nil {
 		m.wordle.validateFull(guess)
-        m.hint = m.wordle.message
+		m.hint = m.wordle.message
 	}
 
 	if err := m.wordle.guess(strings.ToLower(word)); err != nil {
-        m.hint = m.wordle.message
+		m.hint = m.wordle.message
 		return cmd
 	}
 	m.cursor = 0

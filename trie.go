@@ -26,8 +26,8 @@ func NewNode(value byte) *Node {
 }
 
 func (n *Node) hasSiblings() bool {
-    node_idx := alphabetIdx(n.value)
-    siblings := append(n.parent.children[:node_idx], n.parent.children[node_idx+1:]...)
+	node_idx := alphabetIdx(n.value)
+	siblings := append(n.parent.children[:node_idx], n.parent.children[node_idx+1:]...)
 	for _, sibling := range siblings {
 		if sibling != nil {
 			return true
