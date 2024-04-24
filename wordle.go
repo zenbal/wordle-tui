@@ -5,7 +5,12 @@ import (
 	"sort"
 )
 
-var ALPHABET = []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
+var (
+	ALPHABET        = []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}
+	ALPHABET_LENGTH = 26
+	GUESS_LENGTH    = 5
+	MAX_GUESSES     = 5 // zero indexed
+)
 
 func inAlphabet(char byte) bool {
 	index := sort.Search(len(ALPHABET), func(i int) bool {
@@ -31,7 +36,7 @@ type GameStatus int
 const (
 	ONGOING GameStatus = iota
 	WIN
-	LOOSE
+	LOSE
 )
 
 type Feedback int
@@ -51,9 +56,9 @@ type GuessChar struct {
 }
 
 func NewGuess(word string) (Guess, error) {
-	guess := make([]*GuessChar, 5)
-	if len(word) != 5 {
-		return guess, fmt.Errorf("Error: Guess has to be 5 characters long")
+	guess := make([]*GuessChar, GUESS_LENGTH)
+	if len(word) != GUESS_LENGTH {
+		return guess, fmt.Errorf("Error: Guess has to be %d characters long", GUESS_LENGTH)
 	}
 	for i, char := range word {
 		if inAlphabet(byte(char)) == false {
@@ -65,16 +70,16 @@ func NewGuess(word string) (Guess, error) {
 }
 
 func NewWordle() *Wordle {
-	board := make([]Guess, 6)
+	board := make([]Guess, MAX_GUESSES+1)
 
 	trie := NewTrie()
 	if err := trie.insertWordleData(); err != nil {
 		return nil
 	}
 
-	veto := make(map[int]map[int]bool, 5)
-	for i := 0; i < 5; i++ {
-		veto[i] = make(map[int]bool, 26)
+	veto := make(map[int]map[int]bool, GUESS_LENGTH)
+	for i := 0; i < GUESS_LENGTH; i++ {
+		veto[i] = make(map[int]bool, ALPHABET_LENGTH)
 	}
 
 	wordle := &Wordle{
@@ -96,13 +101,13 @@ func (w *Wordle) guess(word string) error {
 		return err
 	}
 	if valid := w.trie.findWord(word); valid == false {
-		w.message = fmt.Sprintf("'%s' is not a valid word\n", word)
+		w.message = fmt.Sprintf("'%s' is not a valid word", word)
 		return fmt.Errorf("Error: Invalid word")
 	}
 	w.board[w.attempt] = new_guess
 	num_correct := 0
 	for i, char := range w.board[w.attempt] {
-		char_idx := alphabet_idx(char.value)
+		char_idx := alphabetIdx(char.value)
 		if char.value == w.solution[i] {
 			char.feedback = GREEN
 			w.assign[i] = char_idx
@@ -117,10 +122,10 @@ func (w *Wordle) guess(word string) error {
 		}
 	}
 
-	if num_correct == 5 {
+	if num_correct == GUESS_LENGTH {
 		w.status = WIN
-	} else if w.attempt == 5 {
-		w.status = LOOSE
+	} else if w.attempt == MAX_GUESSES {
+		w.status = LOSE
 	} else {
 		w.status = ONGOING
 	}
@@ -130,25 +135,25 @@ func (w *Wordle) guess(word string) error {
 
 func (w *Wordle) validate(guess Guess) bool {
 	for i, char := range guess {
-		char_idx := alphabet_idx(char.value)
+		char_idx := alphabetIdx(char.value)
 
 		if assigned, ok := w.assign[i]; ok {
 			if assigned != char_idx {
-				w.message = fmt.Sprintf("'%s' is at index %d of the solution\n", string(ALPHABET[assigned]), i)
+				w.message = fmt.Sprintf("'%s' is at index %d of the solution", string(ALPHABET[assigned]), i)
 				return false
 			}
 		}
 
 		if included, ok := w.include[char_idx]; ok {
 			if !included {
-				w.message = fmt.Sprintf("'%s' is not part of the solution\n", string(char.value))
+				w.message = fmt.Sprintf("'%s' is not part of the solution", string(char.value))
 				return false
 			}
 		}
 
 		if veto, ok := w.veto[i]; ok {
 			if _, isVetoed := veto[char_idx]; isVetoed {
-				w.message = fmt.Sprintf("'%s' can't be at index %d of the solution\n", string(char.value), i)
+				w.message = fmt.Sprintf("'%s' can't be at index %d of the solution", string(char.value), i)
 				return false
 			}
 		}
@@ -165,7 +170,7 @@ func (w *Wordle) validateFull(guess Guess) bool {
 
 	found_included := make(map[int]bool)
 	for _, char := range guess {
-		char_idx := alphabet_idx(char.value)
+		char_idx := alphabetIdx(char.value)
 		if included, ok := w.include[char_idx]; ok && included {
 			found_included[char_idx] = true
 		}
@@ -173,7 +178,7 @@ func (w *Wordle) validateFull(guess Guess) bool {
 
 	for char_idx, include := range w.include {
 		if include && !found_included[char_idx] {
-			w.message = fmt.Sprintf("'%s' is part of the solution\n", string(ALPHABET[char_idx]))
+			w.message = fmt.Sprintf("'%s' is part of the solution", string(ALPHABET[char_idx]))
 			return false
 		}
 	}
@@ -205,7 +210,7 @@ func (w *Wordle) findGuessBacktrack() Guess {
 }
 
 func (w *Wordle) backtrack(guess Guess, curr *Node) Guess {
-	if len(guess) == 5 && curr.isWord {
+	if len(guess) == GUESS_LENGTH && curr.isWord {
 		return guess
 	}
 

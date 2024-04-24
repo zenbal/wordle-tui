@@ -7,7 +7,7 @@ import (
 	"math/rand"
 )
 
-func alphabet_idx(char byte) int {
+func alphabetIdx(char byte) int {
 	return int(char - 'a')
 }
 
@@ -21,18 +21,13 @@ type Node struct {
 func NewNode(value byte) *Node {
 	return &Node{
 		value:    value,
-		children: make([]*Node, 26),
+		children: make([]*Node, ALPHABET_LENGTH),
 	}
 }
 
-func (n *Node) siblings() []*Node {
-	node_idx := alphabet_idx(n.value)
-	siblings := append(n.parent.children[:node_idx], n.parent.children[node_idx+1:]...)
-	return siblings
-}
-
 func (n *Node) hasSiblings() bool {
-	siblings := n.siblings()
+    node_idx := alphabetIdx(n.value)
+    siblings := append(n.parent.children[:node_idx], n.parent.children[node_idx+1:]...)
 	for _, sibling := range siblings {
 		if sibling != nil {
 			return true
@@ -65,7 +60,7 @@ func NewTrie() Trie {
 func (t *Trie) insertWord(word string) {
 	curr := t.head
 	for _, char := range word {
-		char_idx := alphabet_idx(byte(char))
+		char_idx := alphabetIdx(byte(char))
 		var new_node *Node = nil
 		if next := curr.children[char_idx]; next == nil {
 			new_node = NewNode(byte(char))
@@ -82,7 +77,7 @@ func (t *Trie) insertWord(word string) {
 func (t *Trie) findWord(word string) bool {
 	curr := t.head
 	for _, char := range word {
-		char_idx := alphabet_idx(byte(char))
+		char_idx := alphabetIdx(byte(char))
 		if next := curr.children[char_idx]; next == nil {
 			return false
 		} else {
@@ -95,28 +90,28 @@ func (t *Trie) findWord(word string) bool {
 func (t *Trie) deleteWord(word string) {
 	curr := t.head
 	for _, char := range word {
-		char_idx := alphabet_idx(byte(char))
+		char_idx := alphabetIdx(byte(char))
 		if next := curr.children[char_idx]; next != nil {
 			curr = next
 		} else {
 			return
 		}
 	}
-	curr_idx := alphabet_idx(curr.value)
+	curr_idx := alphabetIdx(curr.value)
 	for i := 0; i < len(word); i++ {
 		if curr.hasSiblings() {
 			curr.parent.children[curr_idx] = nil
 			return
 		}
 		curr = curr.parent
-		curr_idx = alphabet_idx(curr.value)
+		curr_idx = alphabetIdx(curr.value)
 	}
 }
 
 func (t *Trie) randomWord() string {
 	curr := t.head
 	word := ""
-	for i := 0; i < 5; i++ {
+	for i := 0; i < MAX_GUESSES; i++ {
 		children := curr.getChildren()
 		next := children[rand.Intn(len(children))]
 		word += string(next.value)

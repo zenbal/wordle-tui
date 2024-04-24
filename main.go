@@ -24,7 +24,7 @@ type model struct {
 }
 
 func NewModel() model {
-	inputs := make([]WordInput, 6)
+	inputs := make([]WordInput, MAX_GUESSES+1)
 	for i := range inputs {
 		inputs[i] = NewWordInput()
 	}
@@ -36,6 +36,7 @@ func NewModel() model {
 		cursor:      0,
 		help:        false,
 		hints:       false,
+		hint:        "",
 		suggestions: false,
 	}
 }
@@ -43,7 +44,7 @@ func NewModel() model {
 type WordInput []textinput.Model
 
 func NewWordInput() WordInput {
-	fields := make([]textinput.Model, 5)
+	fields := make([]textinput.Model, GUESS_LENGTH)
 	cursor := cursor.New()
 	cursor.SetMode(2)
 	for i := range fields {
@@ -88,13 +89,13 @@ func (m model) BoardView() string {
 	title := "GUESSES"
 	if m.wordle.status == WIN {
 		title = "YOU WIN"
-	} else if m.wordle.status == LOOSE {
-		title = "YOU LOOSE"
+	} else if m.wordle.status == LOSE {
+		title = "YOU LOSE"
 	}
-	rows := make([]string, 7)
+	rows := make([]string, MAX_GUESSES+2) // +2 for the extra title row
 	rows = append(rows, titleStyle.Render(title))
 	for i := range m.inputs {
-		cols := make([]string, 5)
+		cols := make([]string, GUESS_LENGTH)
 		for j := range m.inputs[i] {
 			feedback := TBD
 			if m.wordle.board != nil && m.wordle.board[i] != nil {
@@ -122,7 +123,7 @@ func (m model) AsideView() string {
 func (m model) SuggestionView() string {
 	var s strings.Builder
 	if m.suggestions {
-		s.WriteString(fmt.Sprintf("try '%s'\n", m.wordle.suggestNextGuess()))
+		s.WriteString(fmt.Sprintf("Try '%s'\n", m.wordle.suggestNextGuess()))
 	}
 	return helpTextStyle.Render(s.String())
 }
@@ -130,9 +131,9 @@ func (m model) SuggestionView() string {
 func (m model) HintView() string {
 	var s strings.Builder
 	if m.hints {
-		s.WriteString(m.wordle.message)
+		s.WriteString(fmt.Sprintf("Hint: %s\n", m.hint))
 	}
-	return s.String()
+	return helpTextStyle.Render(s.String())
 }
 
 func (m model) HelpView() string {
@@ -163,26 +164,26 @@ func (m model) AlphabetView() string {
 		{'a', 's', 'd', 'f', 'h', 'j', 'k', 'l'},
 		{'z', 'x', 'c', 'v', 'b', 'n', 'm'},
 	}
-	view := make([][]string, 3)
+	view := make([][]string, len(alphabet))
 	for i := range view {
-		view[i] = make([]string, 10)
+		view[i] = make([]string, len(alphabet[0]))
 	}
 	for row := range alphabet {
 	outer:
 		for col := range alphabet[row] {
 			char := alphabet[row][col]
 			for _, char_idx := range m.wordle.assign {
-				if char_idx == alphabet_idx(byte(char)) {
+				if char_idx == alphabetIdx(byte(char)) {
 					view[row][col] = greenInputStyle.Padding(1, 1).Render(strings.ToUpper(string(char)))
 					continue outer
 				}
 			}
 			for char_idx, include := range m.wordle.include {
-				if char_idx == alphabet_idx(byte(char)) && include {
+				if char_idx == alphabetIdx(byte(char)) && include {
 					view[row][col] = yellowInputStyle.Padding(1, 1).Render(strings.ToUpper(string(char)))
 					continue outer
 				}
-				if char_idx == alphabet_idx(byte(char)) && !include {
+				if char_idx == alphabetIdx(byte(char)) && !include {
 					view[row][col] = greyInputStyle.Padding(1, 1).Render(strings.ToUpper(string(char)))
 					continue outer
 				}
@@ -191,7 +192,7 @@ func (m model) AlphabetView() string {
 		}
 	}
 
-	view_joined_rows := make([]string, 3)
+	view_joined_rows := make([]string, len(alphabet))
 	for i := range view_joined_rows {
 		view_joined_rows[i] = lipgloss.JoinHorizontal(
 			lipgloss.Bottom, view[i]...,
@@ -205,7 +206,7 @@ func (m model) AlphabetView() string {
 
 func (m *model) newGame() {
 	m.wordle = NewWordle()
-	inputs := make([]WordInput, 6)
+	inputs := make([]WordInput, MAX_GUESSES+1)
 	for i := range inputs {
 		inputs[i] = NewWordInput()
 	}
@@ -286,7 +287,7 @@ func (m *model) handleKeyBackspace(msg tea.KeyMsg) tea.Cmd {
 
 func (m *model) handleKeyEnter() tea.Cmd {
 	var cmd tea.Cmd
-	if m.cursor != 4 {
+	if m.cursor != GUESS_LENGTH-1 {
 		return cmd
 	}
 	word := ""
@@ -296,7 +297,8 @@ func (m *model) handleKeyEnter() tea.Cmd {
 
 	guess, err := NewGuess(word)
 	if err == nil {
-		m.wordle.validate(guess)
+		m.wordle.validateFull(guess)
+        m.hint = m.wordle.message
 	}
 
 	if err := m.wordle.guess(strings.ToLower(word)); err != nil {
@@ -310,12 +312,12 @@ func (m *model) handleKeyAlphabet(msg tea.KeyMsg) tea.Cmd {
 	current_input := &m.inputs[m.wordle.attempt][m.cursor]
 	current_input.Focus()
 	var cmd tea.Cmd
-	if current_input.Value() != "" && m.cursor < 4 {
+	if current_input.Value() != "" && m.cursor < GUESS_LENGTH-1 {
 		m.cursor++
 		current_input = &m.inputs[m.wordle.attempt][m.cursor]
 	}
 	*current_input, cmd = current_input.Update(msg)
-	if m.cursor < 4 {
+	if m.cursor < GUESS_LENGTH-1 {
 		m.cursor++
 	}
 	return cmd
