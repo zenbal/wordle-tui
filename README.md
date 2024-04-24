@@ -26,15 +26,11 @@ Alternatively, you can download the latest binary build from the [Releases](http
 
 ### Usage
 
-Once installed, simply run the executable to start playing.
-
-```bash
-./wordle-tui
-```
+Once installed, simply run the executable to start playing. Press `?` to show the available shortcuts.
 
 ### Credits
 
-- Original game by (Jost Wardle)[https://www.powerlanguage.co.uk/]
+- Original game by [Josh Wardle](https://www.powerlanguage.co.uk/)
 - [charmbracelet/bubbletea](https://github.com/charmbracelet/bubbletea)
 - [charmbracelet/bubbles](https://github.com/charmbracelet/bubbles)
 - [charmbracelet/lipgloss](https://github.com/charmbracelet/lipgloss)
