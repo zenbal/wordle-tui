@@ -110,31 +110,46 @@ func (m model) BoardView() string {
 }
 
 func (m model) AsideView() string {
-	return lipgloss.JoinVertical(lipgloss.Left, m.AlphabetView(), m.SuggestionView(), m.HintView(), m.HelpView())
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		m.AlphabetView(),
+		m.SuggestionView(),
+		m.HintView(),
+		m.HelpView(),
+	)
 }
 
 func (m model) SuggestionView() string {
+	var s strings.Builder
 	if m.suggestions {
-		return fmt.Sprintf("try '%s'\n", m.wordle.suggestNextGuess())
+		s.WriteString(fmt.Sprintf("try '%s'\n", m.wordle.suggestNextGuess()))
 	}
-	return ""
+	return s.String()
 }
 
 func (m model) HintView() string {
+	var s strings.Builder
 	if m.hints {
-		return m.wordle.message
+		s.WriteString(m.wordle.message)
 	}
-	return ""
+	return s.String()
 }
 
 func (m model) HelpView() string {
 	if m.help {
 		return helpTextStyle.Render(lipgloss.JoinHorizontal(
 			lipgloss.Center,
-			lipgloss.NewStyle().MarginRight(2).Render(lipgloss.JoinVertical(lipgloss.Left, "?", "C-c", "C-r", "Return", "C-h", "C-s")),
-			lipgloss.JoinVertical(lipgloss.Right, "Help", "Quit", "New Game", "Submit Guess", "Show Hints", "Show Suggestions"),
+			lipgloss.NewStyle().MarginRight(2).Render(lipgloss.JoinVertical(
+				lipgloss.Left,
+				"?", "C-c", "C-r", "Return", "C-h", "C-s",
+			)),
+			lipgloss.JoinVertical(
+				lipgloss.Right,
+				"Help", "Quit", "New", "Game", "Submit Guess", "Show Hints", "Show Suggestions",
+			),
 		))
 	}
+
 	return helpTextStyle.Render(lipgloss.JoinHorizontal(
 		lipgloss.Center,
 		lipgloss.NewStyle().MarginRight(2).Render("?"),
@@ -175,11 +190,17 @@ func (m model) AlphabetView() string {
 			view[row][col] = defaultInputStyle.Padding(1, 1).Render(strings.ToUpper(string(char)))
 		}
 	}
+
 	view_joined_rows := make([]string, 3)
 	for i := range view_joined_rows {
-		view_joined_rows[i] = lipgloss.JoinHorizontal(lipgloss.Bottom, view[i]...)
+		view_joined_rows[i] = lipgloss.JoinHorizontal(
+			lipgloss.Bottom, view[i]...,
+		)
 	}
-	return lipgloss.NewStyle().MarginBottom(2).Render(lipgloss.JoinVertical(lipgloss.Center, view_joined_rows...))
+
+	return lipgloss.NewStyle().MarginBottom(2).Render(lipgloss.JoinVertical(
+		lipgloss.Center, view_joined_rows...,
+	))
 }
 
 func (m *model) newGame() {
@@ -203,7 +224,11 @@ func (m model) View() string {
 		m.height,
 		lipgloss.Center,
 		lipgloss.Center,
-		lipgloss.JoinHorizontal(lipgloss.Bottom, m.BoardView(), m.AsideView()),
+		lipgloss.JoinHorizontal(
+			lipgloss.Bottom,
+			m.BoardView(),
+			m.AsideView(),
+		),
 	)
 }
 
@@ -231,10 +256,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+s":
 			m.suggestions = !m.suggestions
 		default:
-            if m.wordle.status != ONGOING {
-                m.newGame()
-                return m, cmd
-            }
+			if m.wordle.status != ONGOING {
+				m.newGame()
+				return m, cmd
+			}
 			if !(msg.String() >= "a" && msg.String() <= "z") {
 				return m, cmd
 			}
