@@ -1,9 +1,10 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/csv"
 	"math/rand"
-	"os"
 )
 
 func alphabet_idx(char byte) int {
@@ -41,13 +42,13 @@ func (n *Node) anySiblings() bool {
 }
 
 func (n *Node) getChildren() []*Node {
-    result := make([]*Node, 0)
-    for _, child := range n.children {
-        if child != nil {
-            result = append(result, child)
-        }
-    } 
-    return result
+	result := make([]*Node, 0)
+	for _, child := range n.children {
+		if child != nil {
+			result = append(result, child)
+		}
+	}
+	return result
 }
 
 type Trie struct {
@@ -63,7 +64,7 @@ func NewTrie() Trie {
 
 func (t *Trie) insertWord(word string) {
 	curr := t.head
-    for _, char := range word {
+	for _, char := range word {
 		char_idx := alphabet_idx(byte(char))
 		var new_node *Node = nil
 		if next := curr.children[char_idx]; next == nil {
@@ -79,21 +80,21 @@ func (t *Trie) insertWord(word string) {
 }
 
 func (t *Trie) findWord(word string) bool {
-    curr := t.head
-    for _, char := range word {
-        char_idx := alphabet_idx(byte(char))
-        if next := curr.children[char_idx]; next == nil {
-            return false
-        } else {
-            curr = next
-        }
-    }
-    return curr.isWord
+	curr := t.head
+	for _, char := range word {
+		char_idx := alphabet_idx(byte(char))
+		if next := curr.children[char_idx]; next == nil {
+			return false
+		} else {
+			curr = next
+		}
+	}
+	return curr.isWord
 }
 
 func (t *Trie) deleteWord(word string) {
 	curr := t.head
-    for _, char := range word {
+	for _, char := range word {
 		char_idx := alphabet_idx(byte(char))
 		if next := curr.children[char_idx]; next != nil {
 			curr = next
@@ -112,14 +113,23 @@ func (t *Trie) deleteWord(word string) {
 	}
 }
 
-func (t *Trie) insertWordleData() error {
-	file, err := os.Open("./data/valid_wordle_solutions.csv")
-	if err != nil {
-		return err
+func (t *Trie) randomWord() string {
+	curr := t.head
+	word := ""
+	for i := 0; i < 5; i++ {
+		children := curr.getChildren()
+		next := children[rand.Intn(len(children))]
+		word += string(next.value)
+		curr = next
 	}
-	defer file.Close()
+	return word
+}
 
-	reader := csv.NewReader(file)
+//go:embed valid_wordle_solutions.csv
+var wordleDataCSV []byte
+
+func (t *Trie) insertWordleData() error {
+	reader := csv.NewReader(bytes.NewReader(wordleDataCSV))
 	words, err := reader.ReadAll()
 	if err != nil {
 		return err
@@ -129,16 +139,4 @@ func (t *Trie) insertWordleData() error {
 		t.insertWord(word[0])
 	}
 	return nil
-}
-
-func (t *Trie) randomWord() string {
-    curr := t.head
-    word := ""
-    for i := 0; i < 5; i++ {
-        children := curr.getChildren() 
-        next := children[rand.Intn(len(children))]
-        word += string(next.value)
-        curr = next
-    }
-    return word
 }
