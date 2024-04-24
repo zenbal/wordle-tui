@@ -57,7 +57,7 @@ func TestDeleteWord(t *testing.T) {
 
 func TestInsertWordleData(t *testing.T) {
 	trie := NewTrie()
-	if err := trie.insertWordleData(); err != nil {
+	if err := trie.insertWordleData(wordleSolutionsCSV); err != nil {
 		t.Errorf("Test failed: Something went wrong")
 	}
 }
