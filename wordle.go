@@ -20,15 +20,16 @@ func inAlphabet(char byte) bool {
 }
 
 type Wordle struct {
-	board    []Guess
-	attempt  int
-	solution string
-	status   GameStatus
-	trie     Trie
-	assign   map[int]int          // green
-	veto     map[int]map[int]bool // yellow
-	include  map[int]bool         // yellow & grey
-	message  string
+	board     []Guess
+	attempt   int
+	solution  string
+	status    GameStatus
+	trie      Trie
+	guessTrie Trie
+	assign    map[int]int          // green
+	veto      map[int]map[int]bool // yellow
+	include   map[int]bool         // yellow & grey
+	message   string
 }
 
 type GameStatus int
@@ -73,9 +74,17 @@ func NewWordle() *Wordle {
 	board := make([]Guess, MAX_GUESSES+1)
 
 	trie := NewTrie()
-	if err := trie.insertWordleData(); err != nil {
+	if err := trie.insertWordleData(wordleSolutionsCSV); err != nil {
 		return nil
 	}
+
+	guessTrie := NewTrie()
+	if err := guessTrie.insertWordleData(wordleGuessesCSV); err != nil {
+		return nil
+	}
+    if err := guessTrie.insertWordleData(wordleSolutionsCSV); err != nil {
+        return nil
+    }
 
 	veto := make(map[int]map[int]bool, GUESS_LENGTH)
 	for i := 0; i < GUESS_LENGTH; i++ {
@@ -83,12 +92,13 @@ func NewWordle() *Wordle {
 	}
 
 	wordle := &Wordle{
-		board:   board,
-		attempt: 0,
-		trie:    trie,
-		assign:  make(map[int]int),  // idx -> char_idx
-		include: make(map[int]bool), // char_idx -> bool
-		veto:    veto,               // idx -> char_idx -> bool
+		board:     board,
+		attempt:   0,
+		trie:      trie,
+		guessTrie: guessTrie,
+		assign:    make(map[int]int),  // idx -> char_idx
+		include:   make(map[int]bool), // char_idx -> bool
+		veto:      veto,               // idx -> char_idx -> bool
 	}
 	wordle.solution = trie.randomWord()
 
@@ -100,7 +110,7 @@ func (w *Wordle) guess(word string) error {
 	if err != nil {
 		return err
 	}
-	if valid := w.trie.findWord(word); valid == false {
+	if valid := w.guessTrie.findWord(word); valid == false {
 		w.message = fmt.Sprintf("'%s' is not a valid word", word)
 		return fmt.Errorf("Error: Invalid word")
 	}

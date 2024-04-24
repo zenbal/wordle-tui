@@ -120,11 +120,14 @@ func (t *Trie) randomWord() string {
 	return word
 }
 
-//go:embed valid_wordle_solutions.csv
-var wordleDataCSV []byte
+//go:embed valid_solutions.csv
+var wordleSolutionsCSV []byte
 
-func (t *Trie) insertWordleData() error {
-	reader := csv.NewReader(bytes.NewReader(wordleDataCSV))
+//go:embed valid_guesses.csv
+var wordleGuessesCSV []byte
+
+func (t *Trie) insertWordleData(data []byte) error {
+	reader := csv.NewReader(bytes.NewReader(data))
 	words, err := reader.ReadAll()
 	if err != nil {
 		return err
