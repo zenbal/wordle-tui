@@ -123,7 +123,7 @@ func (m model) AsideView() string {
 func (m model) SuggestionView() string {
 	var s strings.Builder
 	if m.suggestions {
-		s.WriteString(fmt.Sprintf("Try '%s'\n", m.wordle.suggestNextGuess()))
+        s.WriteString(fmt.Sprintf("Try: '%s'\n", m.wordle.suggestNextGuess()))
 	}
 	return helpTextStyle.Render(s.String())
 }
