@@ -13,7 +13,11 @@ func NewTestWordle() *Wordle {
 func TestGuess(t *testing.T) {
 	wordle := NewTestWordle()
 	guess := "adept"
-	wordle.guess(guess)
+	err := wordle.guess(guess)
+	if err != nil {
+		t.Errorf("Expected guess to be successful but got %s", err)
+	}
+
 	for i, char := range guess {
 		if byte(char) != wordle.board[0][i].value {
 			t.Errorf("Expected 'adept' to be in row 0 of the wordle board.")
@@ -39,7 +43,10 @@ func TestGuess(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	wordle := NewTestWordle()
-	wordle.guess("adept")
+	err := wordle.guess("adept")
+	if err != nil {
+		t.Errorf("Expected guess to be successful but got %s", err)
+	}
 
 	guess := make([]*GuessChar, 5)
 	word := "taste"
@@ -73,7 +80,10 @@ func TestValidate(t *testing.T) {
 
 func TestFindGuessBacktrack(t *testing.T) {
 	wordle := NewTestWordle()
-	wordle.guess("adept")
+	err := wordle.guess("adept")
+	if err != nil {
+		t.Errorf("Expected guess to be successful but got %s", err)
+	}
 
 	guess := wordle.findGuessBacktrack()
 	guess_str := ""
@@ -84,7 +94,10 @@ func TestFindGuessBacktrack(t *testing.T) {
 		t.Errorf("Expected suggested guess to be 'baste' but got '%s'", guess_str)
 	}
 
-	wordle.guess(guess_str)
+	err = wordle.guess(guess_str)
+	if err != nil {
+		t.Errorf("Expected guess to be successful but got %s", err)
+	}
 
 	guess = wordle.findGuessBacktrack()
 	guess_str = ""
@@ -94,7 +107,11 @@ func TestFindGuessBacktrack(t *testing.T) {
 	if guess_str != "earth" {
 		t.Errorf("Expected suggested guess to be 'earth' but got '%s'", guess_str)
 	}
-	wordle.guess(guess_str)
+
+	err = wordle.guess(guess_str)
+	if err != nil {
+		t.Errorf("Expected guess to be successful but got %s", err)
+	}
 
 	if wordle.status != WIN {
 		t.Errorf("Expected status to be 'WIN'")

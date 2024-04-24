@@ -62,7 +62,7 @@ func NewGuess(word string) (Guess, error) {
 		return guess, fmt.Errorf("Error: Guess has to be %d characters long", GUESS_LENGTH)
 	}
 	for i, char := range word {
-		if inAlphabet(byte(char)) == false {
+		if !inAlphabet(byte(char)) {
 			return guess, fmt.Errorf("Error: Invalid character")
 		}
 		guess[i] = &GuessChar{value: byte(char), feedback: TBD}
@@ -110,7 +110,7 @@ func (w *Wordle) guess(word string) error {
 	if err != nil {
 		return err
 	}
-	if valid := w.guessTrie.findWord(word); valid == false {
+	if valid := w.guessTrie.findWord(word); !valid {
 		w.message = fmt.Sprintf("'%s' is not a valid word", word)
 		return fmt.Errorf("Error: Invalid word")
 	}
