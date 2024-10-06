@@ -2,6 +2,8 @@
 
 A simple terminal-based word guessing game written in Go.
 
+![Screenshot](screenshot.png)
+
 ### Features
 
 1. **Wordle Game**: Aims to provide a similar look and feel to the original game.
